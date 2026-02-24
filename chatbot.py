@@ -7,7 +7,7 @@ import time
 # =======================================
 
 # Replace with your Gemini API key
-API_KEY = "YOUR_GEMINI_API_KEY"
+API_KEY = "AIzaSyBI767obYsPgqsy-XbM4AgHoNtPR6YJbJo"
 
 genai.configure(api_key=API_KEY)
 
