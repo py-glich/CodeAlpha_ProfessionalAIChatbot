@@ -1,108 +1,97 @@
 import streamlit as st
-import requests
-import json
+import random
 
-# ================= PAGE =================
-st.set_page_config(
-    page_title="AI Assistant",
-    page_icon="🤖",
-    layout="wide"
-)
+st.set_page_config(page_title="Basic Chatbot", page_icon="🤖")
 
-# ================= LOAD API KEY =================
-try:
-    API_KEY = st.secrets["GROQ_API_KEY"]
-except:
-    st.error("API key not found in secrets. Please add your Groq API key to the secrets.toml file.")
-    st.stop()
-
-API_URL = "https://api.groq.com/openai/v1/chat/completions"
-
-# ================= SESSION =================
+# ================= SESSION STATE =================
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-if "mode" not in st.session_state:
-    st.session_state.mode = "Business"
+if "user_name" not in st.session_state:
+    st.session_state.user_name = None
 
-# ================= MODE =================
-st.sidebar.title("Mode")
-st.session_state.mode = st.sidebar.selectbox(
-    "Assistant Mode",
-    ["Business", "Creative", "Fun"],
-    index=["Business", "Creative", "Fun"].index(st.session_state.mode)
-)
+if "mood" not in st.session_state:
+    st.session_state.mood = None
 
-# ================= SYSTEM PROMPT =================
-def get_system_prompt(mode):
-    if mode == "Business":
-        return "You are a professional business assistant. Be structured, concise, and focus on productivity and efficiency."
-    elif mode == "Creative":
-        return "You are a creative assistant. Be imaginative, inspiring, and help with creative projects."
-    else:  # Fun
-        return "You are a fun and friendly assistant. Be casual, witty, and make conversations enjoyable."
+# ================= BOT LOGIC =================
+def bot_reply(user_input):
+    text = user_input.lower()
 
-# ================= CALL GROQ API =================
-def generate_response(user_input):
-    messages = [
-        {"role": "system", "content": get_system_prompt(st.session_state.mode)}
-    ]
-    
-    # Add chat history
-    for role, content in st.session_state.chat_history:
-        messages.append({"role": role, "content": content})
-    
-    # Add current user message
-    messages.append({"role": "user", "content": user_input})
-    
-    payload = {
-        "model": "llama-3.3-70b-versatile",  # Updated model
-        "messages": messages,
-        "temperature": 0.7,
-        "max_tokens": 1024
-    }
-    
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=30)
-        
-        if response.status_code != 200:
-            return f"API Error: {response.status_code} - {response.text}"
-        
-        data = response.json()
-        return data["choices"][0]["message"]["content"]
-        
-    except requests.exceptions.Timeout:
-        return "Error: Request timed out. Please try again."
-    except Exception as e:
-        return f"Error: {str(e)}"
+    # Name memory
+    if "my name is" in text:
+        name = user_input.split("my name is")[-1].strip().title()
+        st.session_state.user_name = name
+        return f"Nice to meet you, {name}! I'll remember your name 😊"
+
+    # Greeting
+    if any(word in text for word in ["hi", "hello", "hey"]):
+        if st.session_state.user_name:
+            return f"Hello {st.session_state.user_name}! How can I help you today? 😊"
+        return "Hello! What's your name?"
+
+    # Mood detection
+    if "i am sad" in text or "feeling sad" in text:
+        st.session_state.mood = "sad"
+        return "I'm sorry you're feeling sad. I'm here if you want to talk 💙"
+
+    if "i am happy" in text or "feeling happy" in text:
+        st.session_state.mood = "happy"
+        return "That's great! Keep smiling 😊"
+
+    if "i am tired" in text:
+        st.session_state.mood = "tired"
+        return "You should take some rest. Self-care is important 💫"
+
+    # Mood-based replies
+    if st.session_state.mood == "sad":
+        return "Things will get better. I'm here for you 💙"
+
+    if st.session_state.mood == "happy":
+        return "I'm glad you're happy! What made your day great? 😊"
+
+    # How are you
+    if "how are you" in text:
+        return "I'm good! Thanks for asking. How about you?"
+
+    # Movie recommendation
+    if "movie" in text or "recommend" in text:
+        movies = ["Inception", "Interstellar", "The Matrix", "Avengers: Endgame", "Joker"]
+        return f"I recommend watching: {random.choice(movies)} 🎬"
+
+    # Goodbye
+    if "bye" in text:
+        return "Goodbye! Take care 👋"
+
+    return "I’m a basic chatbot. I can greet, remember your name, and chat 😊"
+
 
 # ================= UI =================
-st.title("🤖 AI Assistant")
-st.markdown(f"**Current Mode:** {st.session_state.mode}")
+st.title("🤖 Basic Chatbot (With Name & Mood Features)")
 
-# Display chat history
+# Chat history display
 for role, message in st.session_state.chat_history:
     with st.chat_message(role):
         st.markdown(message)
 
 # Chat input
-user_input = st.chat_input("Ask me anything...")
+user_input = st.chat_input("Type your message")
 
 if user_input:
-    # Add user message to history
     st.session_state.chat_history.append(("user", user_input))
-    
-    # Generate and display response
-    with st.spinner("Thinking..."):
-        response = generate_response(user_input)
-    
-    # Add assistant response to history
+
+    response = bot_reply(user_input)
+
     st.session_state.chat_history.append(("assistant", response))
-    
-    # Rerun to display new messages
+
     st.rerun()
+
+# ================= EXTRA INFO =================
+st.markdown("---")
+st.markdown("### Features")
+st.markdown("""
+✔ remembers your name  
+✔ mood-based replies  
+✔ movie recommendations  
+✔ basic conversation  
+✔ offline chatbot
+""")
