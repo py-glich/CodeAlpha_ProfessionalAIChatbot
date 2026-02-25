@@ -1,8 +1,7 @@
 import streamlit as st
-import requests
 import random
 
-st.set_page_config(page_title="AI Chatbot", page_icon="🤖")
+st.set_page_config(page_title="Smart Chatbot", page_icon="🤖")
 
 # ================= SESSION =================
 if "chat_history" not in st.session_state:
@@ -13,37 +12,6 @@ if "user_name" not in st.session_state:
 
 if "mood" not in st.session_state:
     st.session_state.mood = None
-
-# ================= GROQ API =================
-API_URL = "https://api.groq.com/openai/v1/chat/completions"
-
-# Put your API key here (from Groq dashboard)
-API_KEY = "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"
-
-def ai_reply(user_input):
-    try:
-        payload = {
-            "model": "llama3-70b-8192",
-            "messages": [
-                {"role": "user", "content": user_input}
-            ],
-            "temperature": 0.7
-        }
-
-        headers = {
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json"
-        }
-
-        response = requests.post(API_URL, headers=headers, json=payload)
-
-        if response.status_code == 200:
-            data = response.json()
-            return data["choices"][0]["message"]["content"]
-        else:
-            return "AI service error. Check API key or try later."
-    except:
-        return "Something went wrong with AI."
 
 # ================= BOT LOGIC =================
 def bot_reply(user_input):
@@ -84,19 +52,26 @@ def bot_reply(user_input):
     # Movie recommendation
     if "movie" in text or "recommend" in text:
         movies = ["Inception", "Interstellar", "The Matrix", "Avengers: Endgame", "Joker"]
-        return f"I recommend: {random.choice(movies)} 🎬"
+        return f"I recommend watching: {random.choice(movies)} 🎬"
 
-    # AI response (fallback)
-    return ai_reply(user_input)
+    # Small talk
+    if "how are you" in text:
+        return "I'm good! Thanks for asking 😊"
 
+    if "bye" in text:
+        return "Goodbye! Take care 👋"
+
+    return "I’m a simple chatbot. I can chat, remember your name, and recommend movies."
 
 # ================= UI =================
-st.title("🤖 AI Chatbot (Basic + AI)")
+st.title("🤖 Smart Chatbot")
 
+# Chat history display
 for role, message in st.session_state.chat_history:
     with st.chat_message(role):
         st.markdown(message)
 
+# Chat input
 user_input = st.chat_input("Type your message")
 
 if user_input:
@@ -108,13 +83,13 @@ if user_input:
 
     st.rerun()
 
-# ================= INFO =================
+# ================= FEATURES INFO =================
 st.markdown("---")
 st.markdown("### Features")
 st.markdown("""
-✔ AI-powered replies (Groq)  
 ✔ name memory  
-✔ mood detection  
+✔ mood replies  
 ✔ movie recommendations  
-✔ basic conversation
+✔ basic conversation  
+✔ no external APIs
 """)
