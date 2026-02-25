@@ -15,7 +15,7 @@ except KeyError:
     st.error("""
 API key not found.
 
-Please add it in Streamlit secrets:
+Add it in Streamlit secrets:
 Settings → Secrets → add:
 
 GROQ_API_KEY = "your_api_key"
@@ -70,7 +70,7 @@ def generate_response(user_input):
     messages.append({"role": "user", "content": user_input})
 
     response = client.chat.completions.create(
-        model="llama3-8b-8192",
+        model="llama3-70b-8192",
         messages=messages,
         temperature=0.7
     )
