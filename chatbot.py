@@ -1,9 +1,10 @@
 import streamlit as st
+import requests
 import random
 
-st.set_page_config(page_title="Basic Chatbot", page_icon="🤖")
+st.set_page_config(page_title="AI Chatbot", page_icon="🤖")
 
-# ================= SESSION STATE =================
+# ================= SESSION =================
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
@@ -13,7 +14,27 @@ if "user_name" not in st.session_state:
 if "mood" not in st.session_state:
     st.session_state.mood = None
 
-# ================= BOT LOGIC =================
+# ================= AI API (HuggingFace) =================
+API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill"
+HEADERS = {}
+
+# If you have a token (optional)
+# HEADERS = {"Authorization": "Bearer YOUR_TOKEN"}
+
+def ai_reply(user_input):
+    try:
+        payload = {"inputs": user_input}
+        response = requests.post(API_URL, headers=HEADERS, json=payload)
+
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("generated_text", "I couldn't understand that.")
+        else:
+            return "AI service unavailable. Try again later."
+    except:
+        return "Something went wrong with AI."
+
+# ================= BOT LOGIC (Features) =================
 def bot_reply(user_input):
     text = user_input.lower()
 
@@ -23,57 +44,48 @@ def bot_reply(user_input):
         st.session_state.user_name = name
         return f"Nice to meet you, {name}! I'll remember your name 😊"
 
-    # Greeting
+    # Greetings
     if any(word in text for word in ["hi", "hello", "hey"]):
         if st.session_state.user_name:
-            return f"Hello {st.session_state.user_name}! How can I help you today? 😊"
+            return f"Hello {st.session_state.user_name}! How can I help you?"
         return "Hello! What's your name?"
 
     # Mood detection
     if "i am sad" in text or "feeling sad" in text:
         st.session_state.mood = "sad"
-        return "I'm sorry you're feeling sad. I'm here if you want to talk 💙"
+        return "I'm sorry you're feeling sad. I'm here for you 💙"
 
-    if "i am happy" in text or "feeling happy" in text:
+    if "i am happy" in text:
         st.session_state.mood = "happy"
         return "That's great! Keep smiling 😊"
 
     if "i am tired" in text:
         st.session_state.mood = "tired"
-        return "You should take some rest. Self-care is important 💫"
+        return "Take some rest. Self-care matters 💫"
 
     # Mood-based replies
     if st.session_state.mood == "sad":
-        return "Things will get better. I'm here for you 💙"
+        return "Things will get better. I'm here to listen 💙"
 
     if st.session_state.mood == "happy":
-        return "I'm glad you're happy! What made your day great? 😊"
-
-    # How are you
-    if "how are you" in text:
-        return "I'm good! Thanks for asking. How about you?"
+        return "I'm happy you're happy! What made your day great?"
 
     # Movie recommendation
     if "movie" in text or "recommend" in text:
         movies = ["Inception", "Interstellar", "The Matrix", "Avengers: Endgame", "Joker"]
         return f"I recommend watching: {random.choice(movies)} 🎬"
 
-    # Goodbye
-    if "bye" in text:
-        return "Goodbye! Take care 👋"
-
-    return "I’m a basic chatbot. I can greet, remember your name, and chat 😊"
+    # AI response (fallback)
+    return ai_reply(user_input)
 
 
 # ================= UI =================
-st.title("🤖 Basic Chatbot (With Name & Mood Features)")
+st.title("🤖 AI Chatbot (Basic + AI)")
 
-# Chat history display
 for role, message in st.session_state.chat_history:
     with st.chat_message(role):
         st.markdown(message)
 
-# Chat input
 user_input = st.chat_input("Type your message")
 
 if user_input:
@@ -85,13 +97,13 @@ if user_input:
 
     st.rerun()
 
-# ================= EXTRA INFO =================
+# ================= INFO =================
 st.markdown("---")
 st.markdown("### Features")
 st.markdown("""
-✔ remembers your name  
-✔ mood-based replies  
+✔ AI-powered replies  
+✔ name memory  
+✔ mood detection  
 ✔ movie recommendations  
-✔ basic conversation  
-✔ offline chatbot
+✔ basic conversation
 """)
