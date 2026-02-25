@@ -1,23 +1,26 @@
 import streamlit as st
 from groq import Groq
 
-# ================= CONFIG =================
+# ================= PAGE =================
 st.set_page_config(
-    page_title="AI Multi-Mode Assistant",
+    page_title="AI Assistant",
     page_icon="🤖",
     layout="wide"
 )
 
-# ================= API KEY =================
-try:
-    api_key = st.secrets["GROQ_API_KEY"]
-except:
-    api_key = st.sidebar.text_input("Enter Groq API Key", type="password")
+# ================= API KEY HANDLING =================
+st.sidebar.title("🔐 API Key")
+
+api_key = st.sidebar.text_input(
+    "Enter Groq API Key",
+    type="password"
+)
 
 if not api_key:
-    st.warning("Please enter your Groq API key")
+    st.warning("Please enter your Groq API key in the sidebar")
     st.stop()
 
+# Create client only after key exists
 client = Groq(api_key=api_key)
 
 # ================= SESSION =================
@@ -27,43 +30,33 @@ if "chat_history" not in st.session_state:
 if "mode" not in st.session_state:
     st.session_state.mode = "Business"
 
-# ================= SIDEBAR =================
-st.sidebar.title("⚙️ Assistant Mode")
+# ================= MODE SELECT =================
+st.sidebar.title("⚙️ Mode")
 
 st.session_state.mode = st.sidebar.selectbox(
-    "Choose Mode",
+    "Assistant Mode",
     ["Business", "Creative", "Fun"]
 )
-
-st.sidebar.markdown("""
-### Modes
-
-💼 Business → Professional  
-🎨 Creative → Storytelling  
-🎉 Fun → Casual & witty
-""")
 
 # ================= SYSTEM PROMPTS =================
 def get_system_prompt(mode):
     if mode == "Business":
         return """
 You are a professional business assistant.
-Provide structured, analytical responses.
-Use bullet points when helpful.
+Be structured and analytical.
 """
     elif mode == "Creative":
         return """
 You are a creative assistant.
-Use imaginative and expressive language.
-Tell stories when relevant.
+Be imaginative and expressive.
 """
     elif mode == "Fun":
         return """
-You are a fun AI.
-Be casual, humorous, and lighthearted.
+You are a fun assistant.
+Be casual and lighthearted.
 """
 
-# ================= LLM RESPONSE =================
+# ================= RESPONSE =================
 def generate_response(user_input):
 
     messages = [
@@ -84,9 +77,9 @@ def generate_response(user_input):
     return response.choices[0].message.content
 
 # ================= UI =================
-st.title("🤖 Advanced AI Assistant (Cloud Ready)")
+st.title("🤖 AI Assistant")
 
-# Display chat
+# Chat display
 for role, message in st.session_state.chat_history:
     with st.chat_message(role):
         st.markdown(message)
