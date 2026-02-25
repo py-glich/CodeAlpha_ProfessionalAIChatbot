@@ -1,5 +1,6 @@
 import streamlit as st
-from groq import Groq
+import requests
+import json
 
 # ================= PAGE =================
 st.set_page_config(
@@ -8,21 +9,14 @@ st.set_page_config(
     layout="wide"
 )
 
-# ================= LOAD API FROM SECRETS =================
+# ================= LOAD API KEY =================
 try:
-    api_key = st.secrets["GROQ_API_KEY"]
-except KeyError:
-    st.error("""
-API key not found.
-
-Add it in Streamlit secrets:
-Settings → Secrets → add:
-
-GROQ_API_KEY = "your_api_key"
-""")
+    API_KEY = st.secrets["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"]
+except:
+    st.error("API key not found in secrets.")
     st.stop()
 
-client = Groq(api_key=api_key)
+API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # ================= SESSION =================
 if "chat_history" not in st.session_state:
@@ -31,33 +25,22 @@ if "chat_history" not in st.session_state:
 if "mode" not in st.session_state:
     st.session_state.mode = "Business"
 
-# ================= MODE SELECT =================
+# ================= MODE =================
 st.sidebar.title("Mode")
-
 st.session_state.mode = st.sidebar.selectbox(
     "Assistant Mode",
     ["Business", "Creative", "Fun"]
 )
 
-# ================= SYSTEM PROMPT (ASCII SAFE) =================
+# ================= SYSTEM PROMPT =================
 def get_system_prompt(mode):
     if mode == "Business":
-        return """
-You are a professional business assistant.
-Be structured and analytical.
-"""
-    elif mode == "Creative":
-        return """
-You are a creative assistant.
-Be imaginative and expressive.
-"""
-    elif mode == "Fun":
-        return """
-You are a fun assistant.
-Be casual and lighthearted.
-"""
+        return "You are a professional business assistant. Be structured."
+    if mode == "Creative":
+        return "You are a creative assistant. Be imaginative."
+    return "You are a fun assistant. Be casual."
 
-# ================= RESPONSE =================
+# ================= CALL GROQ (RAW HTTP) =================
 def generate_response(user_input):
 
     messages = [
@@ -69,13 +52,24 @@ def generate_response(user_input):
 
     messages.append({"role": "user", "content": user_input})
 
-    response = client.chat.completions.create(
-        model="llama3-70b-8192",
-        messages=messages,
-        temperature=0.7
-    )
+    payload = {
+        "model": "llama3-70b-8192",
+        "messages": messages,
+        "temperature": 0.7
+    }
 
-    return response.choices[0].message.content
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(API_URL, headers=headers, json=payload)
+
+    if response.status_code != 200:
+        return f"API Error: {response.text}"
+
+    data = response.json()
+    return data["choices"][0]["message"]["content"]
 
 # ================= UI =================
 st.title("AI Assistant")
