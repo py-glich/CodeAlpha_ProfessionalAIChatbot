@@ -5,7 +5,7 @@ from openai import OpenAI
 st.set_page_config(page_title="OpenAI Chatbot", page_icon="🤖")
 
 # ================= API KEY =================
-api_key = st.secrets.get("OPENAI_API_KEY")
+api_key = st.secrets.get("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")
 
 if not api_key:
     st.error("OpenAI API key not found in secrets.")
