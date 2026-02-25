@@ -56,7 +56,7 @@ def generate_response(user_input):
     messages.append({"role": "user", "content": user_input})
     
     payload = {
-        "model": "llama3-70b-8192",
+        "model": "llama-3.3-70b-versatile",  # Updated model
         "messages": messages,
         "temperature": 0.7,
         "max_tokens": 1024
