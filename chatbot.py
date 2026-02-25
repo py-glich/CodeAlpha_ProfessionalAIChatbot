@@ -4,23 +4,24 @@ from groq import Groq
 # ================= PAGE =================
 st.set_page_config(
     page_title="AI Assistant",
-    page_icon="🤖",
+    page_icon="AI",
     layout="wide"
 )
 
-# ================= API KEY HANDLING =================
-st.sidebar.title("🔐 API Key")
+# ================= LOAD API FROM SECRETS =================
+try:
+    api_key = st.secrets["GROQ_API_KEY"]
+except KeyError:
+    st.error("""
+API key not found.
 
-api_key = st.sidebar.text_input(
-    "Enter Groq API Key",
-    type="password"
-)
+Please add it in Streamlit secrets:
+Settings → Secrets → add:
 
-if not api_key:
-    st.warning("Please enter your Groq API key in the sidebar")
+GROQ_API_KEY = "your_api_key"
+""")
     st.stop()
 
-# Create client only after key exists
 client = Groq(api_key=api_key)
 
 # ================= SESSION =================
@@ -31,14 +32,14 @@ if "mode" not in st.session_state:
     st.session_state.mode = "Business"
 
 # ================= MODE SELECT =================
-st.sidebar.title("⚙️ Mode")
+st.sidebar.title("Mode")
 
 st.session_state.mode = st.sidebar.selectbox(
     "Assistant Mode",
     ["Business", "Creative", "Fun"]
 )
 
-# ================= SYSTEM PROMPTS =================
+# ================= SYSTEM PROMPT (ASCII SAFE) =================
 def get_system_prompt(mode):
     if mode == "Business":
         return """
@@ -77,20 +78,18 @@ def generate_response(user_input):
     return response.choices[0].message.content
 
 # ================= UI =================
-st.title("🤖 AI Assistant")
+st.title("AI Assistant")
 
-# Chat display
 for role, message in st.session_state.chat_history:
     with st.chat_message(role):
         st.markdown(message)
 
-# Input
-user_input = st.chat_input("Ask anything...")
+user_input = st.chat_input("Ask anything")
 
 if user_input:
     st.session_state.chat_history.append(("user", user_input))
 
-    with st.spinner("Thinking..."):
+    with st.spinner("Thinking"):
         response = generate_response(user_input)
 
     st.session_state.chat_history.append(("assistant", response))
