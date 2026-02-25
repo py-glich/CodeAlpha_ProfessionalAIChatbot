@@ -14,27 +14,38 @@ if "user_name" not in st.session_state:
 if "mood" not in st.session_state:
     st.session_state.mood = None
 
-# ================= AI API (HuggingFace) =================
-API_URL = "https://api-inference.huggingface.co/models/facebook/blenderbot-400M-distill"
-HEADERS = {}
+# ================= GROQ API =================
+API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-# If you have a token (optional)
-# HEADERS = {"Authorization": "Bearer YOUR_TOKEN"}
+# Put your API key here (from Groq dashboard)
+API_KEY = "YOUR_GROQ_API_KEY"
 
 def ai_reply(user_input):
     try:
-        payload = {"inputs": user_input}
-        response = requests.post(API_URL, headers=HEADERS, json=payload)
+        payload = {
+            "model": "llama3-70b-8192",
+            "messages": [
+                {"role": "user", "content": user_input}
+            ],
+            "temperature": 0.7
+        }
+
+        headers = {
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post(API_URL, headers=headers, json=payload)
 
         if response.status_code == 200:
             data = response.json()
-            return data.get("generated_text", "I couldn't understand that.")
+            return data["choices"][0]["message"]["content"]
         else:
-            return "AI service unavailable. Try again later."
+            return "AI service error. Check API key or try later."
     except:
         return "Something went wrong with AI."
 
-# ================= BOT LOGIC (Features) =================
+# ================= BOT LOGIC =================
 def bot_reply(user_input):
     text = user_input.lower()
 
@@ -51,9 +62,9 @@ def bot_reply(user_input):
         return "Hello! What's your name?"
 
     # Mood detection
-    if "i am sad" in text or "feeling sad" in text:
+    if "i am sad" in text:
         st.session_state.mood = "sad"
-        return "I'm sorry you're feeling sad. I'm here for you 💙"
+        return "I'm sorry you're feeling sad. I'm here 💙"
 
     if "i am happy" in text:
         st.session_state.mood = "happy"
@@ -61,9 +72,9 @@ def bot_reply(user_input):
 
     if "i am tired" in text:
         st.session_state.mood = "tired"
-        return "Take some rest. Self-care matters 💫"
+        return "Take rest. Self-care matters 💫"
 
-    # Mood-based replies
+    # Mood replies
     if st.session_state.mood == "sad":
         return "Things will get better. I'm here to listen 💙"
 
@@ -73,7 +84,7 @@ def bot_reply(user_input):
     # Movie recommendation
     if "movie" in text or "recommend" in text:
         movies = ["Inception", "Interstellar", "The Matrix", "Avengers: Endgame", "Joker"]
-        return f"I recommend watching: {random.choice(movies)} 🎬"
+        return f"I recommend: {random.choice(movies)} 🎬"
 
     # AI response (fallback)
     return ai_reply(user_input)
@@ -101,7 +112,7 @@ if user_input:
 st.markdown("---")
 st.markdown("### Features")
 st.markdown("""
-✔ AI-powered replies  
+✔ AI-powered replies (Groq)  
 ✔ name memory  
 ✔ mood detection  
 ✔ movie recommendations  
