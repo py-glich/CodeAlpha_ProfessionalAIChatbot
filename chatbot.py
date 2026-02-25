@@ -18,7 +18,7 @@ if "mood" not in st.session_state:
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # Put your API key here (from Groq dashboard)
-API_KEY = "YOUR_GROQ_API_KEY"
+API_KEY = "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"
 
 def ai_reply(user_input):
     try:
