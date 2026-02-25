@@ -1,12 +1,24 @@
 import streamlit as st
-import ollama
+from groq import Groq
 
 # ================= CONFIG =================
 st.set_page_config(
-    page_title="Advanced Local AI (Windows)",
+    page_title="AI Multi-Mode Assistant",
     page_icon="🤖",
     layout="wide"
 )
+
+# ================= API KEY =================
+try:
+    api_key = st.secrets["GROQ_API_KEY"]
+except:
+    api_key = st.sidebar.text_input("Enter Groq API Key", type="password")
+
+if not api_key:
+    st.warning("Please enter your Groq API key")
+    st.stop()
+
+client = Groq(api_key=api_key)
 
 # ================= SESSION =================
 if "chat_history" not in st.session_state:
@@ -15,79 +27,64 @@ if "chat_history" not in st.session_state:
 if "mode" not in st.session_state:
     st.session_state.mode = "Business"
 
-if "model" not in st.session_state:
-    st.session_state.model = "llama3:8b"  # Change to "phi3" if low RAM
-
 # ================= SIDEBAR =================
-st.sidebar.title("⚙️ AI Settings")
+st.sidebar.title("⚙️ Assistant Mode")
 
 st.session_state.mode = st.sidebar.selectbox(
-    "Assistant Mode",
+    "Choose Mode",
     ["Business", "Creative", "Fun"]
 )
 
-st.session_state.model = st.sidebar.selectbox(
-    "Model (Performance)",
-    ["llama3:8b", "phi3"]
-)
-
-st.sidebar.markdown("---")
 st.sidebar.markdown("""
-### Mode Behavior
+### Modes
 
-💼 Business → Professional, structured  
-🎨 Creative → Imaginative, expressive  
-🎉 Fun → Casual, humorous  
+💼 Business → Professional  
+🎨 Creative → Storytelling  
+🎉 Fun → Casual & witty
 """)
 
-# ================= SYSTEM PROMPT =================
+# ================= SYSTEM PROMPTS =================
 def get_system_prompt(mode):
     if mode == "Business":
         return """
-You are a strategic business consultant.
-Be professional, structured, and analytical.
+You are a professional business assistant.
+Provide structured, analytical responses.
 Use bullet points when helpful.
 """
     elif mode == "Creative":
         return """
-You are a highly creative assistant.
-Use vivid language and imaginative responses.
+You are a creative assistant.
+Use imaginative and expressive language.
+Tell stories when relevant.
 """
     elif mode == "Fun":
         return """
-You are a fun and witty AI.
-Be energetic and humorous.
+You are a fun AI.
+Be casual, humorous, and lighthearted.
 """
 
-# ================= GENERATE RESPONSE =================
+# ================= LLM RESPONSE =================
 def generate_response(user_input):
 
     messages = [
         {"role": "system", "content": get_system_prompt(st.session_state.mode)}
     ]
 
-    # Limit memory for performance (last 10 messages)
-    for role, content in st.session_state.chat_history[-10:]:
+    for role, content in st.session_state.chat_history:
         messages.append({"role": role, "content": content})
 
     messages.append({"role": "user", "content": user_input})
 
-    stream = ollama.chat(
-        model=st.session_state.model,
+    response = client.chat.completions.create(
+        model="llama3-8b-8192",
         messages=messages,
-        stream=True
+        temperature=0.7
     )
 
-    full_response = ""
-    for chunk in stream:
-        full_response += chunk["message"]["content"]
-        yield full_response
-
+    return response.choices[0].message.content
 
 # ================= UI =================
-st.title("🤖 Advanced Local AI Assistant (Windows)")
-
-st.markdown(f"**Mode:** {st.session_state.mode} | **Model:** {st.session_state.model}")
+st.title("🤖 Advanced AI Assistant (Cloud Ready)")
 
 # Display chat
 for role, message in st.session_state.chat_history:
@@ -100,14 +97,9 @@ user_input = st.chat_input("Ask anything...")
 if user_input:
     st.session_state.chat_history.append(("user", user_input))
 
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty()
+    with st.spinner("Thinking..."):
+        response = generate_response(user_input)
 
-        response_generator = generate_response(user_input)
+    st.session_state.chat_history.append(("assistant", response))
 
-        for partial in response_generator:
-            message_placeholder.markdown(partial)
-
-        final_response = partial
-
-    st.session_state.chat_history.append(("assistant", final_response))
+    st.rerun()
